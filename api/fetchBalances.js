@@ -13,6 +13,7 @@ export default async function handler(req, res) {
     }
     res.status(200).json(responses);
   } catch (error) {
+    console.error('Error fetching balances:', error); // Log the full error
     res.status(500).json({ error: error.message });
   }
 }
