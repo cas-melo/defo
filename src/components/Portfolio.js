@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { PulsarSDK, ChainKeys } from 'pulsar_sdk_js';
 
 function Portfolio() {
   const [tokenDetails, setTokenDetails] = useState([]);
@@ -8,31 +7,23 @@ function Portfolio() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const API_KEY = process.env.REACT_APP_PULSAR_API_KEY; // Use environment variable
-    const sdk = new PulsarSDK(API_KEY);
-    const wallet_addr = '0x1bdb97985913d699b0fbd1aacf96d1f855d9e1d0';
-
     const fetchBalances = async () => {
       try {
-        console.log('Fetching balances...'); // Log when fetching starts
-        const balances = sdk.balances.getWalletBalances(wallet_addr, ChainKeys.ETHEREUM);
-        const responses = [];
-        for await (const balance of balances) {
-          console.log('Received balance:', balance); // Log each balance
-          responses.push(balance);
-        }
+        console.log('Fetching balances from serverless function...');
+        const response = await fetch('/api/fetchBalances'); // Call the Vercel serverless function
+        const data = await response.json();
+        console.log('Received data:', data); // Log the received data
 
-        if (responses.length === 0) {
-          console.log('No balances were returned');
+        if (response.ok) {
+          setTokenDetails(data);
+          const total = data.reduce((sum, token) => sum + parseFloat(token.usd_value || 0), 0);
+          setTotalValue(total);
+        } else {
+          throw new Error(data.error || 'Failed to fetch data');
         }
-
-        // Process the data
-        setTokenDetails(responses);
-        const total = responses.reduce((sum, token) => sum + parseFloat(token.usd_value || 0), 0);
-        setTotalValue(total);
-        setIsLoading(false); // Stop loading when the fetch is done
+        setIsLoading(false);
       } catch (error) {
-        console.error('Error fetching balances:', error); // Log any errors
+        console.error('Error fetching balances:', error);
         setError(error);
         setIsLoading(false);
       }
